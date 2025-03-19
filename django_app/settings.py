@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    'bot',
     'django_app',
     'django_app.products',
     'django_app.clients',

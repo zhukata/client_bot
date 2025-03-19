@@ -1,7 +1,7 @@
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
-from database import get_client, create_client
+from bot.database import get_client, create_client
 
 router = Router()
 
