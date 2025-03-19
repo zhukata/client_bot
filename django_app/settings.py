@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     
     'django_app',
     'django_app.products',
-    'django_app.baskets',
+    'django_app.clients',
 ]
 
 MIDDLEWARE = [
