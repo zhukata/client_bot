@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 from bot.handlers.start import router as start_router
 from bot.handlers.catalog import router as catalog_router
+from bot.handlers.cart import router as cart_router
 
 
 load_dotenv()
@@ -23,6 +24,7 @@ class Command(BaseCommand):
         dp = Dispatcher()
         dp.include_router(start_router)
         dp.include_router(catalog_router)
+        dp.include_router(cart_router)
 
         self.stdout.write(self.style.SUCCESS("Бот запущен..."))
         await bot.delete_webhook(drop_pending_updates=True)
