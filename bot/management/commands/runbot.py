@@ -2,7 +2,8 @@ import os, logging, asyncio
 from django.core.management.base import BaseCommand
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
-from bot.handlers import start  
+from bot.handlers.start import router as start_router
+from bot.handlers.catalog import router as catalog_router
 
 
 load_dotenv()
@@ -20,7 +21,8 @@ class Command(BaseCommand):
 
         bot = Bot(BOT_TOKEN)
         dp = Dispatcher()
-        dp.include_router(start.router)
+        dp.include_router(start_router)
+        dp.include_router(catalog_router)
 
         self.stdout.write(self.style.SUCCESS("Бот запущен..."))
         await bot.delete_webhook(drop_pending_updates=True)
