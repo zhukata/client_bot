@@ -1,28 +1,35 @@
 import logging
 import os
-from aiogram.types import FSInputFile
 from aiogram import Router, types, F
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from bot.database import (
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from bot.database.cart_db import add_to_cart
+from bot.database.catalog_db import (
     get_categories, get_product, get_subcategories, get_products,
     count_categories, count_subcategories, count_products,
     ITEMS_PER_PAGE
 )
+from bot.handlers.callback import (
+    CategoryCallback, SubcategoryCallback, ProductCallback,
+    AddToCartCallback, SetQuantityCallback, ConfirmAddCallback
+)
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
 router = Router()
 
-async def generate_pagination_keyboard(items, total_count, callback_prefix, page):
-    """Создает инлайн-клавиатуру с пагинацией"""
-    buttons = [[InlineKeyboardButton(text=item.name, callback_data=f"{callback_prefix}_{item.id}")] for item in items]
+
+async def generate_pagination_keyboard(items, total_count, callback_factory, page):
+    """Создаёт инлайн-клавиатуру с пагинацией"""
+    buttons = [
+        [InlineKeyboardButton(text=item.name, callback_data=callback_factory(id=item.id, page=page).pack())]
+        for item in items
+    ]
 
     nav_buttons = []
     if page > 0:
-        nav_buttons.append(InlineKeyboardButton(text="⬅️ Назад", callback_data=f"{callback_prefix}_page_{page - 1}"))
+        nav_buttons.append(InlineKeyboardButton(text="⬅️ Назад", callback_data=callback_factory(id=0, page=page - 1).pack()))
     if (page + 1) * ITEMS_PER_PAGE < total_count:
-        nav_buttons.append(InlineKeyboardButton(text="➡️ Вперед", callback_data=f"{callback_prefix}_page_{page + 1}"))
+        nav_buttons.append(InlineKeyboardButton(text="➡️ Вперёд", callback_data=callback_factory(id=0, page=page + 1).pack()))
 
     if nav_buttons:
         buttons.append(nav_buttons)
@@ -36,110 +43,109 @@ async def catalog_handler(message: types.Message):
     logging.info("Получен запрос на отображение категорий.")
     categories = await get_categories(0, ITEMS_PER_PAGE)
     total_count = await count_categories()
-    keyboard = await generate_pagination_keyboard(categories, total_count, "category", 0)
+    keyboard = await generate_pagination_keyboard(categories, total_count, CategoryCallback, 0)
     await message.answer("Выберите категорию:", reply_markup=keyboard)
 
 
-@router.callback_query(F.data.startswith("category_page_"))
-async def category_pagination_handler(callback: types.CallbackQuery):
-    """Обрабатывает переключение страниц категорий"""
-    logging.info(f"Получен callback: {callback.data}")
-    page = int(callback.data.split("_")[-1])
-    categories = await get_categories(page * ITEMS_PER_PAGE, ITEMS_PER_PAGE)
-    total_count = await count_categories()
-    keyboard = await generate_pagination_keyboard(categories, total_count, "category", page)
-    await callback.message.edit_text("Выберите категорию:", reply_markup=keyboard)
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("category_"))
-async def category_handler(callback: types.CallbackQuery):
+@router.callback_query(CategoryCallback.filter())
+async def category_handler(callback: types.CallbackQuery, callback_data: CategoryCallback):
     """Обрабатывает выбор категории и показывает подкатегории"""
     logging.info(f"Получен callback: {callback.data}")
-    category_id = int(callback.data.split("_")[1])
-    subcategories = await get_subcategories(category_id, 0, ITEMS_PER_PAGE)
-    total_count = await count_subcategories(category_id)
-    keyboard = await generate_pagination_keyboard(subcategories, total_count, f"subcategory_{category_id}", 0)
-    await callback.message.edit_text("Выберите подкатегорию:", reply_markup=keyboard)
-    await callback.answer()
+    category_id = callback_data.id
+    page = callback_data.page
 
-
-@router.callback_query(F.data.startswith("subcategory_page_"))
-async def subcategory_pagination_handler(callback: types.CallbackQuery):
-    """Обрабатывает переключение страниц подкатегорий"""
-    logging.info(f"Получен callback: {callback.data}")
-    parts = callback.data.split("_")
-    category_id = int(parts[1])
-    page = int(parts[-1])
     subcategories = await get_subcategories(category_id, page * ITEMS_PER_PAGE, ITEMS_PER_PAGE)
     total_count = await count_subcategories(category_id)
-    keyboard = await generate_pagination_keyboard(subcategories, total_count, f"subcategory_{category_id}", page)
+    keyboard = await generate_pagination_keyboard(subcategories, total_count, SubcategoryCallback, page)
     await callback.message.edit_text("Выберите подкатегорию:", reply_markup=keyboard)
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("subcategory_"))
-async def subcategory_handler(callback: types.CallbackQuery):
+@router.callback_query(SubcategoryCallback.filter())
+async def subcategory_handler(callback: types.CallbackQuery, callback_data: SubcategoryCallback):
     """Обрабатывает выбор подкатегории и показывает товары"""
     logging.info(f"Получен callback: {callback.data}")
-    subcategory_id = int(callback.data.split("_")[1])
-    products = await get_products(subcategory_id, 0, ITEMS_PER_PAGE)
-    total_count = await count_products(subcategory_id)
-    keyboard = await generate_pagination_keyboard(products, total_count, f"product_{subcategory_id}", 0)
-    await callback.message.edit_text("Выберите товар:", reply_markup=keyboard)
-    await callback.answer()
+    subcategory_id = callback_data.id
+    page = callback_data.page
 
-
-@router.callback_query(F.data.startswith("product_page_"))
-async def product_pagination_handler(callback: types.CallbackQuery):
-    """Обрабатывает переключение страниц товаров"""
-    logging.info(f"Получен callback: {callback.data}")
-    parts = callback.data.split("_")
-    subcategory_id = int(parts[1])
-    page = int(parts[-1])
     products = await get_products(subcategory_id, page * ITEMS_PER_PAGE, ITEMS_PER_PAGE)
     total_count = await count_products(subcategory_id)
-    keyboard = await generate_pagination_keyboard(products, total_count, f"product_{subcategory_id}", page)
+    keyboard = await generate_pagination_keyboard(products, total_count, ProductCallback, page)
     await callback.message.edit_text("Выберите товар:", reply_markup=keyboard)
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("product_"))
-async def product_handler(callback: types.CallbackQuery):
+@router.callback_query(ProductCallback.filter())
+async def product_handler(callback: types.CallbackQuery, callback_data: ProductCallback):
     """Отображает информацию о товаре и кнопку 'Добавить в корзину'"""
     logging.info(f"Получен callback: {callback.data}")
-    product_id = int(callback.data.split("_")[1])
-    
-    # Получаем товар из БД
+    product_id = callback_data.id
+
     product = await get_product(product_id)
     if not product:
-        logging.warning(f"Товар с ID {product_id} не найден.")
         await callback.answer("Товар не найден!", show_alert=True)
         return
-    
-    # Формирование описания товара
+
     caption = f"<b>{product.name}</b>\n\n{product.description}\n\nЦена: {product.price} ₽"
-    
-    # Проверка пути к изображению
-    image_path = os.path(str(product.image) or "")
-    logging.info(f"Изображение: {image_path}")
-    
+    image_path = os.path.join("", str(product.image) or "")
+
     if product.image and os.path.exists(image_path):
-        photo = FSInputFile(image_path)  # Загружаем файл
+        photo = FSInputFile(image_path)
         await callback.message.answer_photo(
             photo=photo,
             caption=caption,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
-                    [InlineKeyboardButton(text="🛒 Добавить в корзину", callback_data=f"add_to_cart_{product_id}")],
-                    [InlineKeyboardButton(text="🔙 Назад", callback_data=f"subcategory_{product.category_id}")]
+                    [InlineKeyboardButton(text="🛒 Добавить в корзину", callback_data=AddToCartCallback(id=product_id).pack())],
                 ]
             ),
             parse_mode="HTML"
         )
     else:
-        logging.error("Ошибка: изображение не найдено.")
         await callback.message.answer("Ошибка: изображение не найдено!", parse_mode="HTML")
-    
     await callback.answer()
 
+
+@router.callback_query(AddToCartCallback.filter())
+async def add_to_cart_handler(callback: types.CallbackQuery, callback_data: AddToCartCallback):
+    """Запрашивает количество товара перед добавлением в корзину"""
+    logging.info(f"Получен callback: {callback.data}")
+    product_id = callback_data.id
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=str(i), callback_data=SetQuantityCallback(id=product_id, quantity=i).pack())]
+        for i in range(1, 6)
+    ])
+    await callback.message.answer("Выберите количество товара:", reply_markup=keyboard)
+    await callback.answer()
+
+
+@router.callback_query(SetQuantityCallback.filter())
+async def set_quantity_handler(callback: types.CallbackQuery, callback_data: SetQuantityCallback):
+    """Обрабатывает выбор количества товара"""
+    logging.info(f"Получен callback: {callback.data}")
+    product_id = callback_data.id
+    quantity = callback_data.quantity
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Подтвердить", callback_data=ConfirmAddCallback(id=product_id, quantity=quantity).pack())],
+    ])
+    await callback.message.edit_text(f"Вы выбрали {quantity} шт. Добавить в корзину?", reply_markup=keyboard)
+    await callback.answer()
+
+
+@router.callback_query(ConfirmAddCallback.filter())
+async def confirm_add_to_cart(callback: types.CallbackQuery, callback_data: ConfirmAddCallback):
+    """Добавляет товар в корзину и уведомляет пользователя"""
+    logging.info(f"Получен callback: {callback.data}")
+    product_id = callback_data.id
+    quantity = callback_data.quantity
+
+    user_id = callback.from_user.id
+    try:
+        await add_to_cart(user_id, product_id, quantity)
+        await callback.message.edit_text("✅ Товар добавлен в корзину!")
+    except Exception as e:
+        logging.error(f"Ошибка добавления товара: {e}")
+        await callback.message.edit_text("Ошибка добавления товара в корзину.")
+    await callback.answer()

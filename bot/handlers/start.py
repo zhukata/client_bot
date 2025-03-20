@@ -3,7 +3,7 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-from bot.database import get_client, create_client
+from bot.database.catalog_db import get_client, create_client
 from bot.config import CHANNEL_ID, GROUP_ID
 
 router = Router()
