@@ -1,4 +1,5 @@
-import logging, asyncio
+import logging
+import asyncio
 from django.core.management.base import BaseCommand
 from aiogram import Bot, Dispatcher
 

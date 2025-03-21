@@ -1,7 +1,6 @@
 import logging
-from asgiref.sync import sync_to_async
 from bot.database.catalog_db import get_client
-from django_app.clients.models import CartItem, Order, OrderItem
+from django_app.clients.models import Order, OrderItem
 
 
 async def get_order(order_id):
@@ -31,11 +30,3 @@ async def create_order(user_id, full_name, phone, address, total_price, cart_ite
     await OrderItem.objects.abulk_create(order_items)
 
     return order
-
-    # # Очистка корзины
-    # try:
-    #     await CartItem.objects.filter(cart__client_id=client.id).adelete()
-    #     return order
-    # except Exception as e:
-    #     logging.warning(f"Ошибка очистки корзины: {e}")
-    #     raise

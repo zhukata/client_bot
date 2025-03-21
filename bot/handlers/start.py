@@ -1,7 +1,11 @@
-from aiogram import Bot, Router
+import logging
+from aiogram import F, Bot, Router
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
-from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.keyboard import (
+    InlineKeyboardBuilder, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton
+)
 
 from bot.database.catalog_db import get_client, create_client
 from bot.config import CHANNEL_ID, GROUP_ID
@@ -15,9 +19,14 @@ start_keyboard = ReplyKeyboardMarkup(
         ],
         resize_keyboard=True
     )
+
+
 @router.message(Command('help'))
 async def help_command(message: Message):
-    await message.answer("Доступные команды:\n/start - Зарегистрироваться или войти\n/help - Показать это сообщение")
+    await message.answer(
+        """Доступные команды:\n/start - Зарегистрироваться или войти\n
+        /help - Показать это сообщение"""
+    )
 
 
 @router.message(CommandStart())
@@ -25,7 +34,7 @@ async def start_command(message: Message):
     user = await get_client(message.from_user.id)
     if not user:
         user = await create_client(message.from_user.id, message.from_user.username)
-        await message.answer(f"Привет, {user.username or 'пользователь'}! Вы успешно зарегистрированы.")
+        await message.answer(f"Привет, {user.username or 'пользователь'}! Вы успешно зарегистрированы.", reply_markup=start_keyboard)
     else:
         await message.answer(f"Добро пожаловать обратно, {user.username or 'пользователь'}!", reply_markup=start_keyboard)
 
@@ -43,10 +52,10 @@ async def check_subscription(user_id: int, bot: Bot, channel_id: str) -> bool:
 # @router.message(CommandStart())
 # async def start_handler(message: Message, bot: Bot):
 #     user = message.from_user
-    
+
 #     subscribed_channel = await check_subscription(user.id, bot, CHANNEL_ID)
 #     subscribed_group = await check_subscription(user.id, bot, GROUP_ID)
-    
+
 #     if not subscribed_channel or not subscribed_group:
 #         # Если не подписан — отправляем сообщение с кнопками подписки
 #         keyboard = InlineKeyboardBuilder()

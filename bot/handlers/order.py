@@ -7,10 +7,10 @@ from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.database.cart_db import get_cart_items
 from bot.database.order_db import create_order
-from bot.handlers.callback import PaymentCallback
 
 
 router = Router()
+
 
 class OrderForm(StatesGroup):
     full_name = State()
@@ -86,9 +86,6 @@ async def process_address(message: Message, state: FSMContext):
             [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")]
         ]
     )
-
-    # Логируем созданную клавиатуру
-    logging.info(f"Создана клавиатура для заказа {order.id}: {keyboard}")
 
     await message.answer(text, reply_markup=keyboard)
     await state.clear()

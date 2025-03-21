@@ -1,74 +1,103 @@
 import logging
 from aiogram import Bot, Router, F
-from aiogram.types import CallbackQuery, LabeledPrice, InlineKeyboardMarkup, InlineKeyboardButton, Message, PreCheckoutQuery
+from aiogram.types import (
+    CallbackQuery, LabeledPrice, InlineKeyboardMarkup,
+    InlineKeyboardButton, Message, PreCheckoutQuery
+)
+from aiogram.exceptions import TelegramBadRequest
 from bot.database.cart_db import clear_cart
-from bot.database.catalog_db import get_client
 from bot.database.order_db import get_order
 from bot.config import Y_KASSA_TOKEN, BOT_TOKEN
-# from bot.utils.excel import save_order_to_excel
+from bot.excel import save_order_to_excel
 
-router = Router()
-bot = Bot(BOT_TOKEN)
+
+router: Router = Router()
+bot: Bot = Bot(BOT_TOKEN)
+
 
 @router.callback_query(F.data.startswith('pay_'))
-async def process_payment(callback: CallbackQuery):
+async def process_payment(callback: CallbackQuery) -> None:
     """Генерация платежного инвойса"""
-    logging.info(f"Пользователь {callback.from_user.id} инициировал оплату.")
+    user_id = callback.from_user.id
+    logging.info(f"Пользователь {user_id} инициировал оплату.")
 
-    order_id = int(callback.data.split("_")[1])
-    order = await get_order(order_id)
-
-    if not order:
+    try:
+        order_id = int(callback.data.split("_")[1])
+        order = await get_order(order_id)
+        if not order:
+            raise ValueError("Заказ не найден")
+    except (IndexError, ValueError) as e:
+        logging.error(f"Ошибка при получении заказа: {e}")
         await callback.message.answer("❌ Ошибка: заказ не найден!")
-        logging.error(f"Заказ {order_id} не найден.")
         return
 
     prices = [LabeledPrice(
-        label=f'Оплата заказа #{order.id}',
+        label=f'Подтверждение оплаты заказа  #{order.id}',
         amount=int(float(order.total_price) * 100)
     )]
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💳 Оплатить", pay=True)],
-            [InlineKeyboardButton(text="❌ Отмена", callback_data=f"cancel_pay_{order.id}")]
+            [InlineKeyboardButton(
+                text="❌ Отмена", callback_data=f"cancel_pay_{order.id}")]
         ]
     )
+    description = f"""Пожалуйста проверьте свои данные перед оплатой.\n
+                    Оплатите {order.total_price}₽, чтобы завершить покупку."""
 
-    await bot.send_invoice(
-        chat_id=callback.from_user.id,
-        title=f'Оплата заказа #{order.id}',
-        description=f'Оплатите {order.total_price}₽, чтобы завершить покупку.',
-        payload=f"{order.id}",
-        provider_token=Y_KASSA_TOKEN,
-        currency='rub',
-        prices=prices,
-        reply_markup=keyboard
-    )
+    try:
+        await bot.send_invoice(
+            chat_id=user_id,
+            title=f'Оплата заказа #{order.id}',
+            description=description,
+            payload=str(order.id),
+            provider_token=Y_KASSA_TOKEN,
+            currency='rub',
+            prices=prices,
+            reply_markup=keyboard
+        )
+        logging.info(f"Инвойс для заказа {order.id} отправлен пользователю {user_id}.")
+    except TelegramBadRequest as e:
+        logging.error(f"Ошибка при отправке инвойса: {e}")
+        await callback.message.answer("❌ Ошибка при создании платежа.")
 
-    logging.info(f"Инвойс для заказа {order.id} отправлен.")
+    await callback.message.answer("Следуйте дальнейшим инструкциям для оплаты")
+
+
+@router.callback_query(F.data.startswith('cancel_pay_'))
+async def cancel_payment(callback: CallbackQuery) -> None:
+    """Отмена оплаты пользователем"""
+    logging.info(f"Пользователь {callback.from_user.id} отменил оплату.")
+    await callback.message.answer("❌ Оплата отменена.")
     await callback.message.delete()
 
 
 @router.pre_checkout_query(lambda query: True)
-async def pre_checkout_query(pre_checkout_q: PreCheckoutQuery):
+async def pre_checkout_query(pre_checkout_q: PreCheckoutQuery) -> None:
     """Подтверждение перед оплатой"""
     await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
     logging.info(f"Предварительная проверка платежа {pre_checkout_q.id} пройдена.")
 
 
 @router.message(F.successful_payment)
-async def process_successful_payment(message: Message):
+async def process_successful_payment(message: Message) -> None:
     """Обрабатывает успешную оплату"""
     order_id = int(message.successful_payment.invoice_payload)
-    logging.info(f"Платеж за заказ {order_id} прошел успешно.")
+    user_id = message.from_user.id
+    logging.info(f"Платеж за заказ {order_id} от пользователя {user_id} прошел успешно.")
 
-    
     # Записываем заказ в Excel
-    # await save_order_to_excel(order_id)
-    
-    # удаляем товары из корзины
-    await clear_cart(message.from_user.id)
+    try:
+        await save_order_to_excel(order_id)
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении заказа {order_id} в Excel: {e}")
+
+    # Очищаем корзину
+    try:
+        await clear_cart(user_id)
+    except Exception as e:
+        logging.error(f"Ошибка при очистке корзины: {e}")
 
     await message.answer(
         f"✅ Оплата заказа #{order_id} прошла успешно!\n"

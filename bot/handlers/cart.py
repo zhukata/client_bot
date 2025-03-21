@@ -1,5 +1,5 @@
 import logging
-from aiogram import Bot, Router, F
+from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 

@@ -6,7 +6,7 @@ from django_app.clients.models import Client
 from django.core.exceptions import ObjectDoesNotExist
 from django_app.products.models import Category, Product, Subcategory
 
-ITEMS_PER_PAGE = 3 # Количество элементов на одной странице
+ITEMS_PER_PAGE = 3  # Количество элементов на одной странице
 
 
 async def create_client(tg_id, tg_username):
@@ -22,15 +22,15 @@ async def get_client(tg_id):
         return None
 
 
-# async def get_products(page: int, per_page: int):
-#     """Получает список товаров с учетом пагинации"""
-#     total_count = await Product.objects.acount()
-#     total_pages = ceil(total_count / per_page)
-    
-#     offset = (page - 1) * per_page
-#     products = await Product.objects.all().aoffset(offset).alimit(per_page)
-    
-#     return products, total_pages
+async def get_products(page: int, per_page: int):
+    """Получает список товаров с учетом пагинации"""
+    total_count = await Product.objects.acount()
+    total_pages = ceil(total_count / per_page)
+
+    offset = (page - 1) * per_page
+    products = await Product.objects.all().aoffset(offset).alimit(per_page)
+
+    return products, total_pages
 
 
 async def get_product(product_id):
