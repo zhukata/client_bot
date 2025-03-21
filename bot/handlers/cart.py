@@ -1,7 +1,6 @@
 import logging
-from aiogram import Bot, Router, types, F
-from aiogram.types import Message
-from aiogram.filters import CommandStart, Command
+from aiogram import Bot, Router, F
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.database.cart_db import get_cart_items, remove_from_cart
@@ -13,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 @router.message(F.text == "🛒 Корзина")
-async def cart_handler(message: types.Message):
+async def cart_handler(message: Message):
     """Отправляет список товаров в корзине"""
     user_id = message.from_user.id
     try:
@@ -57,7 +56,6 @@ async def cart_handler(message: types.Message):
     # Создаём клавиатуру
     try:
         keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-        logging.info(f"Создана клавиатура: {keyboard}")
         await message.answer(text, reply_markup=keyboard)
     except Exception as e:
         logging.error(f"Ошибка при создании клавиатуры для пользователя {user_id}: {e}")
@@ -65,7 +63,7 @@ async def cart_handler(message: types.Message):
 
 
 @router.callback_query(lambda c: c.data.startswith("remove:"))
-async def remove_from_cart_handler(callback: types.CallbackQuery):
+async def remove_from_cart_handler(callback: CallbackQuery):
     try:
         cart_item_id = int(callback.data.split(":")[1])
         logging.info(f"Удаляем товар с ID: {cart_item_id}")

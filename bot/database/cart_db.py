@@ -54,14 +54,26 @@ async def get_cart_items(user_id):
         logging.error(f"Ошибка получения корзины для пользователя {user_id}: {e}")
         raise
 
+
 async def remove_from_cart(cart_item_id):
     """Удаляет товар из корзины"""
     try:
-        cart_item = await CartItem.objects.aget(id=cart_item_id)  # Проверяем наличие элемента
-        await cart_item.adelete()  # Удаляем элемент корзины
+        cart_item = await CartItem.objects.aget(id=cart_item_id)
+        await cart_item.adelete()
         logging.info(f"Товар с ID {cart_item_id} успешно удалён из корзины.")
     except CartItem.DoesNotExist:
         logging.warning(f"Товар с ID {cart_item_id} не найден в корзине.")
     except Exception as e:
         logging.error(f"Ошибка при удалении товара с ID {cart_item_id}: {e}")
+        raise
+
+
+async def clear_cart(user_id):
+    """ Чистит корзину"""
+    try:
+        # Чистим корзину только после успешного платежа
+        await CartItem.objects.filter(cart__client_id=user_id).adelete()
+        logging.info(f"Корзина пользователя {user_id} успешно очищена.")
+    except Exception as e:
+        logging.warning(f"Ошибка очистки корзины после оплаты: {e}")
         raise

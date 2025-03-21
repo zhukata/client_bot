@@ -33,3 +33,6 @@ class RemoveFromCartCallback(CallbackData, prefix="remove"):
     id: int
 
 
+class PaymentCallback(CallbackData, prefix="pay"):
+    order_id: int
+

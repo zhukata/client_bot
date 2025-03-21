@@ -1,15 +1,14 @@
-import os, logging, asyncio
+import logging, asyncio
 from django.core.management.base import BaseCommand
 from aiogram import Bot, Dispatcher
-from dotenv import load_dotenv
+
 from bot.handlers.start import router as start_router
 from bot.handlers.catalog import router as catalog_router
 from bot.handlers.cart import router as cart_router
+from bot.handlers.order import router as order_router
+from bot.handlers.payment import router as payment_router
+from bot.config import BOT_TOKEN
 
-
-load_dotenv()
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 class Command(BaseCommand):
     help = "Запускает Telegram-бота"
@@ -25,6 +24,8 @@ class Command(BaseCommand):
         dp.include_router(start_router)
         dp.include_router(catalog_router)
         dp.include_router(cart_router)
+        dp.include_router(order_router)
+        dp.include_router(payment_router)
 
         self.stdout.write(self.style.SUCCESS("Бот запущен..."))
         await bot.delete_webhook(drop_pending_updates=True)
