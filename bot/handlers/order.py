@@ -1,10 +1,10 @@
-import logging
 from aiogram import Router,  F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 
+from bot.logging_config import logger
 from bot.database.cart_db import get_cart_items
 from bot.database.order_db import create_order
 
@@ -48,31 +48,26 @@ async def process_address(message: Message, state: FSMContext):
     user_id = message.from_user.id
     data = await state.get_data()
 
-    # Логируем данные, введённые пользователем
-    logging.info(f"Полученные данные state: {data}")
+    logger.info(f"Полученные данные state: {data}")
 
     full_name = data['full_name']
     phone = data['phone']
     address = message.text
 
-    # Получаем товары из корзины
     cart_items = await get_cart_items(user_id)
-    logging.info(f"Товары в корзине пользователя {user_id}: {cart_items}")
+    logger.info(f"Товары в корзине пользователя {user_id}: {cart_items}")
 
     if not cart_items:
         await message.answer("❌ Ваша корзина пуста. Добавьте товары перед оформлением заказа.")
         await state.clear()
         return
 
-    # Вычисляем общую сумму заказа
     total_price = sum(item.product.price * item.quantity for item in cart_items)
-    logging.info(f"Общая сумма заказа: {total_price} руб.")
+    logger.info(f"Общая сумма заказа: {total_price} руб.")
 
-    # Создаём заказ
     order = await create_order(user_id, full_name, phone, address, total_price, cart_items)
-    logging.info(f"Создан заказ: {order}")
+    logger.info(f"Создан заказ: {order}")
 
-    # Формируем текст и клавиатуру для ответа
     text = f"✅ Ваш заказ оформлен!\n\n" \
            f"👤 ФИО: {full_name}\n" \
            f"📞 Телефон: {phone}\n" \

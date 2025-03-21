@@ -1,9 +1,10 @@
-import logging
 import os
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+
 from bot.database.cart_db import add_to_cart
+from bot.logging_config import logger
 from bot.database.catalog_db import (
     get_categories, get_product, get_subcategories, get_products,
     count_categories, count_subcategories, count_products,
@@ -14,7 +15,6 @@ from bot.handlers.callback import (
     AddToCartCallback, SetQuantityCallback, ConfirmAddCallback
 )
 
-logging.basicConfig(level=logging.INFO)
 
 router = Router()
 
@@ -41,7 +41,7 @@ async def generate_pagination_keyboard(items, total_count, callback_factory, pag
 @router.message(F.text == "🛍 Каталог")
 async def catalog_handler(message: Message):
     """Отправляет список категорий"""
-    logging.info("Получен запрос на отображение категорий.")
+    logger.info("Получен запрос на отображение категорий.")
     categories = await get_categories(0, ITEMS_PER_PAGE)
     total_count = await count_categories()
     keyboard = await generate_pagination_keyboard(categories, total_count, CategoryCallback, 0)
@@ -51,7 +51,7 @@ async def catalog_handler(message: Message):
 @router.callback_query(CategoryCallback.filter())
 async def category_handler(callback: CallbackQuery, callback_data: CategoryCallback):
     """Обрабатывает выбор категории и показывает подкатегории"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     category_id = callback_data.id
     page = callback_data.page
 
@@ -65,7 +65,7 @@ async def category_handler(callback: CallbackQuery, callback_data: CategoryCallb
 @router.callback_query(SubcategoryCallback.filter())
 async def subcategory_handler(callback: CallbackQuery, callback_data: SubcategoryCallback):
     """Обрабатывает выбор подкатегории и показывает товары"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     subcategory_id = callback_data.id
     page = callback_data.page
 
@@ -79,7 +79,7 @@ async def subcategory_handler(callback: CallbackQuery, callback_data: Subcategor
 @router.callback_query(ProductCallback.filter())
 async def product_handler(callback: CallbackQuery, callback_data: ProductCallback):
     """Отображает информацию о товаре и кнопку 'Добавить в корзину'"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     product_id = callback_data.id
 
     product = await get_product(product_id)
@@ -110,7 +110,7 @@ async def product_handler(callback: CallbackQuery, callback_data: ProductCallbac
 @router.callback_query(AddToCartCallback.filter())
 async def add_to_cart_handler(callback: CallbackQuery, callback_data: AddToCartCallback):
     """Запрашивает количество товара перед добавлением в корзину"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     product_id = callback_data.id
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -124,7 +124,7 @@ async def add_to_cart_handler(callback: CallbackQuery, callback_data: AddToCartC
 @router.callback_query(SetQuantityCallback.filter())
 async def set_quantity_handler(callback: CallbackQuery, callback_data: SetQuantityCallback):
     """Обрабатывает выбор количества товара"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     product_id = callback_data.id
     quantity = callback_data.quantity
 
@@ -138,7 +138,7 @@ async def set_quantity_handler(callback: CallbackQuery, callback_data: SetQuanti
 @router.callback_query(ConfirmAddCallback.filter())
 async def confirm_add_to_cart(callback: CallbackQuery, callback_data: ConfirmAddCallback):
     """Добавляет товар в корзину и уведомляет пользователя"""
-    logging.info(f"Получен callback: {callback.data}")
+    logger.info(f"Получен callback: {callback.data}")
     product_id = callback_data.id
     quantity = callback_data.quantity
 
@@ -147,6 +147,6 @@ async def confirm_add_to_cart(callback: CallbackQuery, callback_data: ConfirmAdd
         await add_to_cart(user_id, product_id, quantity)
         await callback.message.edit_text("✅ Товар добавлен в корзину!")
     except Exception as e:
-        logging.error(f"Ошибка добавления товара: {e}")
+        logger.error(f"Ошибка добавления товара: {e}")
         await callback.message.edit_text("Ошибка добавления товара в корзину.")
     await callback.answer()

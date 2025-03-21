@@ -1,4 +1,3 @@
-import logging
 from aiogram import F, Bot, Router
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
@@ -7,6 +6,7 @@ from aiogram.utils.keyboard import (
     ReplyKeyboardMarkup, KeyboardButton
 )
 
+from bot.logging_config import logger
 from bot.database.catalog_db import get_client, create_client
 from bot.config import CHANNEL_ID, GROUP_ID
 

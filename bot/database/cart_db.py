@@ -1,8 +1,9 @@
-import logging
 from asgiref.sync import sync_to_async
 from django.db.models import F
+
 from bot.database.catalog_db import get_client
 from django_app.clients.models import Cart, CartItem
+from bot.logging_config import logger
 
 
 async def add_to_cart(user_id, product_id, quantity):
@@ -33,10 +34,10 @@ async def get_cart_items(user_id):
         items = await sync_to_async(list)(cart.items.select_related("product"))
         return items
     except Cart.DoesNotExist:
-        logging.warning(f"Корзина для клиента с ID {user_id} не найдена.")
+        logger.warning(f"Корзина для клиента с ID {user_id} не найдена.")
         return []
     except Exception as e:
-        logging.error(f"Ошибка получения корзины для пользователя {user_id}: {e}")
+        logger.error(f"Ошибка получения корзины для пользователя {user_id}: {e}")
         raise
 
 
@@ -45,11 +46,11 @@ async def remove_from_cart(cart_item_id):
     try:
         cart_item = await CartItem.objects.aget(id=cart_item_id)
         await cart_item.adelete()
-        logging.info(f"Товар с ID {cart_item_id} успешно удалён из корзины.")
+        logger.info(f"Товар с ID {cart_item_id} успешно удалён из корзины.")
     except CartItem.DoesNotExist:
-        logging.warning(f"Товар с ID {cart_item_id} не найден в корзине.")
+        logger.warning(f"Товар с ID {cart_item_id} не найден в корзине.")
     except Exception as e:
-        logging.error(f"Ошибка при удалении товара с ID {cart_item_id}: {e}")
+        logger.error(f"Ошибка при удалении товара с ID {cart_item_id}: {e}")
         raise
 
 
@@ -58,12 +59,12 @@ async def clear_cart(user_id: int) -> None:
     cart_items = CartItem.objects.filter(cart__client__tg_id=user_id)
 
     if not await cart_items.aexists():
-        logging.info(f"Корзина пользователя {user_id} уже пуста.")
+        logger.info(f"Корзина пользователя {user_id} уже пуста.")
         return
 
     try:
         deleted_count, _ = await cart_items.adelete()
-        logging.info(f"Удалено {deleted_count} товаров из корзины пользователя {user_id}.")
+        logger.info(f"Удалено {deleted_count} товаров из корзины пользователя {user_id}.")
     except Exception as e:
-        logging.error(f"Ошибка при очистке корзины пользователя {user_id}: {e}")
+        logger.error(f"Ошибка при очистке корзины пользователя {user_id}: {e}")
         raise

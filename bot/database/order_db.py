@@ -1,4 +1,4 @@
-import logging
+from bot.logging_config import logger
 from bot.database.catalog_db import get_client
 from django_app.clients.models import Order, OrderItem
 
@@ -8,7 +8,7 @@ async def get_order(order_id):
         order = await Order.objects.aget(id=order_id)
         return order
     except Exception as e:
-        logging.warning(f"Заказ не найден {e}")
+        logger.warning(f"Заказ не найден {e}")
         raise
 
 
