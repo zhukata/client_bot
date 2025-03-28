@@ -2,17 +2,23 @@ from aiogram.filters.callback_data import CallbackData
 
 
 class CategoryCallback(CallbackData, prefix="category"):
-    id: int
-    page: int
+    """Callback для категорий"""
+    id: int | None = None  # None для навигации, int для выбора категории
+    page: int = 1
 
 
 class SubcategoryCallback(CallbackData, prefix="subcategory"):
-    id: int
-    page: int
+    """Callback для подкатегорий"""
+    id: int | None = None  # None для навигации, int для выбора подкатегории
+    page: int = 1
+    category_id: int | None = None  # ID родительской категории
 
 
 class ProductCallback(CallbackData, prefix="product"):
-    id: int
+    """Callback для товаров"""
+    id: int | None = None  # None для навигации, int для выбора товара
+    page: int = 1
+    subcategory_id: int | None = None  # ID родительской подкатегории
 
 
 class AddToCartCallback(CallbackData, prefix="add_to_cart"):
