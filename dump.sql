@@ -629,6 +629,7 @@ COPY public.auth_user_user_permissions (id, user_id, permission_id) FROM stdin;
 --
 
 COPY public.clients_cart (id, created_at, client_id) FROM stdin;
+1	2025-03-21 21:02:57.918964+00	3
 \.
 
 
@@ -637,6 +638,8 @@ COPY public.clients_cart (id, created_at, client_id) FROM stdin;
 --
 
 COPY public.clients_cartitem (id, quantity, cart_id, product_id) FROM stdin;
+3	4	1	4
+4	1	1	2
 \.
 
 
@@ -646,6 +649,7 @@ COPY public.clients_cartitem (id, quantity, cart_id, product_id) FROM stdin;
 
 COPY public.clients_client (id, tg_id, created_at, username) FROM stdin;
 2	123456789	2025-03-21 20:51:57.407139+00	test_user
+3	678677474	2025-03-21 21:02:31.159248+00	Zhukata
 \.
 
 
@@ -673,6 +677,16 @@ COPY public.django_admin_log (id, action_time, object_id, object_repr, action_fl
 1	2025-03-21 20:54:16.960372+00	1	Zhukata	3		10	1
 2	2025-03-21 20:54:49.068257+00	2	msi	2	[{"changed": {"fields": ["Name", "Image"]}}]	9	1
 3	2025-03-21 20:55:24.233048+00	1	asus	2	[{"changed": {"fields": ["Name", "Category", "Image"]}}]	9	1
+4	2025-03-29 12:07:54.694267+00	4	Электроника → Аудиосистемы	1	[{"added": {}}]	8	1
+5	2025-03-29 12:08:14.943852+00	5	Электроника → Компьютеры	1	[{"added": {}}]	8	1
+6	2025-03-29 12:08:25.12292+00	6	Электроника → Телефоны	1	[{"added": {}}]	8	1
+7	2025-03-29 12:09:18.270549+00	4	mac	1	[{"added": {}}]	9	1
+8	2025-03-29 12:10:00.904598+00	5	lenovo	1	[{"added": {}}]	9	1
+9	2025-03-29 12:10:24.239694+00	6	acer	1	[{"added": {}}]	9	1
+10	2025-03-29 12:10:40.412762+00	1	asus	2	[{"changed": {"fields": ["Description"]}}]	9	1
+11	2025-03-29 12:10:52.075576+00	2	msi	2	[{"changed": {"fields": ["Description"]}}]	9	1
+12	2025-03-29 12:11:04.7323+00	5	Мебель	1	[{"added": {}}]	7	1
+13	2025-03-29 12:11:09.84076+00	6	Товары для дома	1	[{"added": {}}]	7	1
 \.
 
 
@@ -744,6 +758,8 @@ yzeepmrflkhddqhvhx2b352qwm18cn0f	.eJxVjEsOAiEQBe_C2pDmJ-LSvWcgTTfIqIFkmFkZ766TzE
 COPY public.products_category (id, name) FROM stdin;
 1	Электроника
 2	Одежда
+5	Мебель
+6	Товары для дома
 \.
 
 
@@ -753,8 +769,11 @@ COPY public.products_category (id, name) FROM stdin;
 
 COPY public.products_product (id, name, description, price, image, created_at, category_id) FROM stdin;
 3	Футболка Adidas	\N	3000.00		2025-03-21 20:51:57.39777+00	3
-2	msi		200000.00	product_images/msi_9cBSxXd.jpeg	2025-03-21 20:51:57.392379+00	2
-1	asus		100000.00	product_images/photo_2024-10-22_15-21-58.jpeg	2025-03-21 20:51:57.383071+00	2
+4	mac	macbook	100500.00	product_images/mac_ofZvjWy.jpeg	2025-03-29 12:09:18.268805+00	2
+5	lenovo	dfgdfgdfgdfgdf	12345.00	product_images/lenovo_9pxlYCi.jpeg	2025-03-29 12:10:00.904041+00	2
+6	acer	ac	25300.00	product_images/acer_WrodzgS.jpeg	2025-03-29 12:10:24.239196+00	2
+1	asus	dsrfgdfgdfgd	100000.00	product_images/photo_2024-10-22_15-21-58.jpeg	2025-03-21 20:51:57.383071+00	2
+2	msi	retyrtyrtyrty	200000.00	product_images/msi_9cBSxXd.jpeg	2025-03-21 20:51:57.392379+00	2
 \.
 
 
@@ -766,6 +785,9 @@ COPY public.products_subcategory (id, name, category_id) FROM stdin;
 1	Смартфоны	1
 2	Ноутбуки	1
 3	Футболки	2
+4	Аудиосистемы	1
+5	Компьютеры	1
+6	Телефоны	1
 \.
 
 
@@ -815,21 +837,21 @@ SELECT pg_catalog.setval('public.auth_user_user_permissions_id_seq', 1, false);
 -- Name: clients_cart_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.clients_cart_id_seq', 1, false);
+SELECT pg_catalog.setval('public.clients_cart_id_seq', 1, true);
 
 
 --
 -- Name: clients_cartitem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.clients_cartitem_id_seq', 1, false);
+SELECT pg_catalog.setval('public.clients_cartitem_id_seq', 4, true);
 
 
 --
 -- Name: clients_client_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.clients_client_id_seq', 2, true);
+SELECT pg_catalog.setval('public.clients_client_id_seq', 3, true);
 
 
 --
@@ -850,7 +872,7 @@ SELECT pg_catalog.setval('public.clients_orderitem_id_seq', 1, false);
 -- Name: django_admin_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.django_admin_log_id_seq', 3, true);
+SELECT pg_catalog.setval('public.django_admin_log_id_seq', 13, true);
 
 
 --
@@ -871,21 +893,21 @@ SELECT pg_catalog.setval('public.django_migrations_id_seq', 22, true);
 -- Name: products_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.products_category_id_seq', 4, true);
+SELECT pg_catalog.setval('public.products_category_id_seq', 6, true);
 
 
 --
 -- Name: products_product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.products_product_id_seq', 3, true);
+SELECT pg_catalog.setval('public.products_product_id_seq', 6, true);
 
 
 --
 -- Name: products_subcategory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: zhukata
 --
 
-SELECT pg_catalog.setval('public.products_subcategory_id_seq', 3, true);
+SELECT pg_catalog.setval('public.products_subcategory_id_seq', 6, true);
 
 
 --
