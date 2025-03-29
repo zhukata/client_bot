@@ -1,5 +1,5 @@
 from math import ceil
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
@@ -47,28 +47,36 @@ class Paginator:
         return self.page > 1
 
 
-async def create_client(tg_id, tg_username):
+async def create_client(tg_id: int, tg_username: Optional[str]) -> Client:
+    """
+    Создает нового клиента
+    
+    Args:
+        tg_id: ID пользователя в Telegram
+        tg_username: имя пользователя в Telegram
+        
+    Returns:
+        Client: созданный клиент
+    """
     client = await Client.objects.acreate(tg_id=tg_id, username=tg_username)
     await client.asave()
     return client
 
 
-async def get_client(tg_id):
+async def get_client(tg_id: int) -> Optional[Client]:
+    """
+    Получает клиента по ID в Telegram
+    
+    Args:
+        tg_id: ID пользователя в Telegram
+        
+    Returns:
+        Optional[Client]: клиент или None, если не найден
+    """
     try:
         return await Client.objects.aget(tg_id=tg_id)
     except ObjectDoesNotExist:
         return None
-
-
-async def get_products(page: int, per_page: int):
-    """Получает список товаров с учетом пагинации"""
-    total_count = await Product.objects.acount()
-    total_pages = ceil(total_count / per_page)
-
-    offset = (page - 1) * per_page
-    products = await Product.objects.all().aoffset(offset).alimit(per_page)
-
-    return products, total_pages
 
 
 @sync_to_async
@@ -124,15 +132,15 @@ def get_subcategories(category_id: int) -> List[Subcategory]:
 
 
 @sync_to_async
-def get_products(subcategory_id: int) -> List[Product]:
+def get_products(subcategory_id: int) -> list[Product]:
     """
-    Получает список товаров для указанной подкатегории
+    Получает все товары для подкатегории
     
     Args:
         subcategory_id: ID подкатегории
         
     Returns:
-        List[Product]: список товаров
+        list[Product]: список товаров
     """
     try:
         products = list(
@@ -141,8 +149,9 @@ def get_products(subcategory_id: int) -> List[Product]:
         )
         logger.info(f"Получено {len(products)} товаров для подкатегории {subcategory_id}")
         return products
+
     except Exception as e:
-        logger.error(f"Ошибка при получении товаров для подкатегории {subcategory_id}: {e}")
+        logger.error(f"Ошибка при получении товаров: {e}")
         return []
 
 
