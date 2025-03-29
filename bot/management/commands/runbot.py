@@ -8,6 +8,7 @@ from bot.handlers.catalog import router as catalog_router
 from bot.handlers.cart import router as cart_router
 from bot.handlers.order import router as order_router
 from bot.handlers.payment import router as payment_router
+from bot.handlers.faq import router as faq_router
 from bot.config import BOT_TOKEN
 
 
@@ -27,6 +28,7 @@ class Command(BaseCommand):
         dp.include_router(cart_router)
         dp.include_router(order_router)
         dp.include_router(payment_router)
+        dp.include_router(faq_router)
 
         self.stdout.write(self.style.SUCCESS("Бот запущен..."))
         await bot.delete_webhook(drop_pending_updates=True)
